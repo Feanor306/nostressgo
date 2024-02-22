@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
+	"github.com/feanor306/nostressgo/src/config"
+	"github.com/feanor306/nostressgo/src/database"
 	"github.com/feanor306/nostressgo/src/server"
 )
 
@@ -26,12 +29,12 @@ func serveWs(hub *server.Hub, w http.ResponseWriter, r *http.Request) {
 	client.Read()
 }
 
-func setupRoutes() {
+func setupRoutes(conf *config.Config) {
 	hub := server.NewHub()
 	go hub.Start()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "NOSTRess GO on port :8080")
+		fmt.Fprintf(w, fmt.Sprintf("NOSTRess GO started on port %d", conf.Port))
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)
@@ -39,7 +42,30 @@ func setupRoutes() {
 }
 
 func main() {
+	ctx := context.Background()
+	conf, err := config.GetConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	connString, err := conf.GetPostgresConnString()
+	if err != nil {
+		panic(err)
+	}
+
+	db, err := database.NewDatabase(ctx, connString)
+	if err != nil {
+		panic(err)
+	}
+
+	str, err := db.InitDatabase(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(str)
+
 	fmt.Println("NOSTRess go!")
-	setupRoutes()
-	http.ListenAndServe(":8080", nil)
+	setupRoutes(conf)
+	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), nil)
 }
