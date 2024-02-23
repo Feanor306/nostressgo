@@ -27,27 +27,27 @@ func GetConfig() (*Config, error) {
 }
 
 func (c *Config) GetPostgresConnString() (string, error) {
-	username, err := readEnvVar("PGUSER")
+	username, err := readEnvVar("POSTGRES_USER")
 	if err != nil {
 		return "", err
 	}
 
-	password, err := readEnvVar("PGPASSWORD")
+	password, err := readEnvVar("POSTGRES_PASSWORD")
 	if err != nil {
 		return "", err
 	}
 
-	host, err := readEnvVar("PGHOST")
+	host, err := readEnvVar("POSTGRES_HOST")
 	if err != nil {
 		return "", err
 	}
 
-	port, err := readEnvVar("PGPORT")
+	port, err := readEnvVar("POSTGRES_PORT")
 	if err != nil {
 		return "", err
 	}
 
-	dbname, err := readEnvVar("PGDATABASE")
+	dbname, err := readEnvVar("POSTGRES_DB")
 	if err != nil {
 		return "", err
 	}
