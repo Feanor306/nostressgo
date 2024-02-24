@@ -43,3 +43,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-pgpass}
     volumes:
       - ./data/pgadmin:/var/lib/pgadmin
+
+networks:
+  default:
+    external:
+      name: proxy
