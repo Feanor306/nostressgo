@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -42,7 +41,6 @@ func setupRoutes(conf *config.Config) {
 }
 
 func main() {
-	ctx := context.Background()
 	conf, err := config.GetConfig()
 	if err != nil {
 		panic(err)
@@ -53,17 +51,16 @@ func main() {
 		panic(err)
 	}
 
-	db, err := database.NewDatabase(ctx, connString)
+	db, err := database.NewDatabase(connString)
 	if err != nil {
 		panic(err)
 	}
+	defer db.Close()
 
-	str, err := db.InitDatabase(ctx)
+	err = db.InitDatabase()
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(str)
 
 	fmt.Println("NOSTRess go!")
 	setupRoutes(conf)
