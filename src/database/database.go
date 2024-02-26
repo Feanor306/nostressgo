@@ -63,14 +63,6 @@ func (db *DB) InitDatabase() error {
 }
 
 func (db *DB) CreateEvent(event *nostr.Event) error {
-	sigOk, err := event.CheckSignature()
-	if err != nil {
-		return err
-	}
-	if !sigOk {
-		return fmt.Errorf("invalid signature")
-	}
-
 	etags := helpers.GetEtags(event)
 	ptags := helpers.GetPtags(event)
 	gtags := helpers.GetGtags(event)
@@ -96,6 +88,34 @@ func (db *DB) CreateEvent(event *nostr.Event) error {
 	if len(id) == 0 {
 		return fmt.Errorf("create event failed")
 	}
+
+	return err
+}
+
+func (db *DB) EventZeroExists(event *nostr.Event) (string, error) {
+	var id string
+	err := db.sq.Select("id").
+		From("events").
+		Where("pubkey", event.PubKey).
+		Where("kind", "0").
+		QueryRow().Scan(&id)
+
+	return id, err
+}
+
+func (db *DB) UpdateEventZero(id string, event *nostr.Event) error {
+	json, err := event.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.sq.Update("events").
+		Set("id", event.ID).
+		Set("content", event.Content).
+		Set("created_at", event.CreatedAt).
+		Set("raw", string(json)).
+		Where("id", id).
+		Exec()
 
 	return err
 }
