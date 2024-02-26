@@ -107,9 +107,8 @@ func (c *Client) getEvent() *nostr.Event {
 }
 
 func (c *Client) serializeEvent(e *nostr.Event) []byte {
-	id := e.Serialize()
-	e.ID = string(id)
-	e.Sig = e.ID
+	e.Sign(c.privateKey)
+
 	result, err := e.MarshalJSON()
 	if err != nil {
 		log.Println("marshal event", err)
