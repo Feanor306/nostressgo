@@ -1,8 +1,8 @@
 server: 
-	go run "src/main.go"
+	go run "cmd/server/main.go"
 
 client:
-	go run "src/client/main.go"
+	go run "cmd/client/main.go"
 
 up: 
 	docker-compose -f nostressgo.yml up -d

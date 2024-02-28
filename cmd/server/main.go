@@ -7,36 +7,33 @@ import (
 	"github.com/feanor306/nostressgo/src/config"
 	"github.com/feanor306/nostressgo/src/database"
 	"github.com/feanor306/nostressgo/src/server"
+	"github.com/feanor306/nostressgo/src/service"
 )
 
-func serveWs(hub *server.Hub, w http.ResponseWriter, r *http.Request) {
+func serveWs(w http.ResponseWriter, r *http.Request, hub *server.Hub, svc *service.Service) {
 	fmt.Println("WebSocket Endpoint Hit")
 
-	// create server earlier in main and pass here
 	srv := server.NewServer()
 	conn, err := srv.Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+v\n", err)
 	}
 
-	client := &server.Client{
-		Conn: conn,
-		Hub:  hub,
-	}
+	client := server.NewClient(conn, hub, svc)
 
 	hub.Register <- client
 	client.Read()
 }
 
-func setupRoutes(conf *config.Config) {
+func setupRoutes(svc *service.Service) {
 	hub := server.NewHub()
 	go hub.Start()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, fmt.Sprintf("NOSTRess GO started on port %d", conf.Port))
+		fmt.Fprintf(w, fmt.Sprintf("NOSTRess GO started on port %d", svc.Conf.Port))
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
+		serveWs(w, r, hub, svc)
 	})
 }
 
@@ -62,7 +59,9 @@ func main() {
 		panic(err)
 	}
 
+	svc := service.NewService(conf, db)
+
 	fmt.Println("NOSTRess go!")
-	setupRoutes(conf)
+	setupRoutes(svc)
 	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), nil)
 }
