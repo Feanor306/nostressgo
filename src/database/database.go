@@ -5,9 +5,12 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/feanor306/nostressgo/src/helpers"
+	"github.com/feanor306/nostressgo/src/types"
+	"github.com/feanor306/nostressgo/src/utils"
 	"github.com/nbd-wtf/go-nostr"
 )
+
+const EVENTS = "events"
 
 type DB struct {
 	conn *sql.DB
@@ -63,12 +66,12 @@ func (db *DB) InitDatabase() error {
 }
 
 func (db *DB) CreateEvent(event *nostr.Event) error {
-	etags := helpers.GetEtags(event)
-	ptags := helpers.GetPtags(event)
-	gtags := helpers.GetGtags(event)
+	etags := utils.GetEtags(event)
+	ptags := utils.GetPtags(event)
+	gtags := utils.GetGtags(event)
 	dtag := event.Tags.GetD()
 
-	expiration, err := helpers.GetExpiration(event)
+	expiration, err := utils.GetExpiration(event)
 	if err != nil {
 		return err
 	}
@@ -79,7 +82,7 @@ func (db *DB) CreateEvent(event *nostr.Event) error {
 	}
 
 	var id string
-	err = db.sq.Insert("events").
+	err = db.sq.Insert(EVENTS).
 		Columns("id", "pubkey", "content", "created_at", "kind", "etags", "ptags", "gtags", "dtag", "expiration", "raw").
 		Values(event.ID, event.PubKey, event.Content, event.CreatedAt.Time().Unix(), event.Kind, etags, ptags, gtags, dtag, expiration, string(json)).
 		Suffix("RETURNING \"id\"").
@@ -95,7 +98,7 @@ func (db *DB) CreateEvent(event *nostr.Event) error {
 func (db *DB) EventZeroExists(event *nostr.Event) (string, error) {
 	var id string
 	err := db.sq.Select("id").
-		From("events").
+		From(EVENTS).
 		Where("pubkey", event.PubKey).
 		Where("kind", "0").
 		QueryRow().Scan(&id)
@@ -109,13 +112,49 @@ func (db *DB) UpdateEventZero(id string, event *nostr.Event) error {
 		return err
 	}
 
-	_, err = db.sq.Update("events").
-		Set("id", event.ID).
-		Set("content", event.Content).
-		Set("created_at", event.CreatedAt).
+	upd := db.sq.Update(EVENTS).
+		Set("id", event.ID)
+
+	if len(event.Content) > 0 {
+		upd = upd.Set("content", event.Content)
+	}
+
+	_, err = upd.Set("created_at", event.CreatedAt).
 		Set("raw", string(json)).
 		Where("id", id).
 		Exec()
 
 	return err
+}
+
+func (db *DB) GetEventsByFilter(filter *nostr.Filter, chanGroup *types.ChanGroup) error {
+	// return all events and handle them in Service/Client/Handler
+	defer chanGroup.Done()
+	query := db.sq.Select("*").From(EVENTS)
+
+	query = BuildFilterQuery(filter, query)
+
+	rows, err := query.Query()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var event *types.Event
+
+		if err := rows.Scan(&event.ID, &event.PubKey, &event.Content, &event.CreatedAt,
+			&event.Kind, &event.Etags, &event.Ptags, &event.Gtags, &event.Dtag, &event.Expiration, &event.Json); err != nil {
+			return err
+		}
+
+		event.SetTags()
+		chanGroup.Chan <- event.ToEnvelopeWrapper()
+	}
+
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
