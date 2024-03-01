@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	MaxConnections int
-	Port           int
+	MaxConnections  int
+	Port            int
+	ExclusivePubKey string
 }
 
 func GetConfig() (*Config, error) {
@@ -20,9 +21,12 @@ func GetConfig() (*Config, error) {
 		return nil, err
 	}
 
+	exclusivePubKey, _ := readEnvVar("NOSTRESSGO_EXCLUSIVE_PUBKEY")
+
 	return &Config{
-		MaxConnections: readEnvNumber("NOSTRESSGO_MAX_CONN", 5),
-		Port:           readEnvNumber("NOSTRESSGO_PORT", 3000),
+		MaxConnections:  readEnvNumber("NOSTRESSGO_MAX_CONN", 5),
+		Port:            readEnvNumber("NOSTRESSGO_PORT", 3000),
+		ExclusivePubKey: exclusivePubKey,
 	}, nil
 }
 
