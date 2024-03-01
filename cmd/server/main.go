@@ -6,6 +6,7 @@ import (
 
 	"github.com/feanor306/nostressgo/src/config"
 	"github.com/feanor306/nostressgo/src/database"
+	"github.com/feanor306/nostressgo/src/handlers"
 	"github.com/feanor306/nostressgo/src/server"
 	"github.com/feanor306/nostressgo/src/service"
 )
@@ -13,8 +14,7 @@ import (
 func serveWs(w http.ResponseWriter, r *http.Request, hub *server.Hub, svc *service.Service) {
 	fmt.Println("WebSocket Endpoint Hit")
 
-	srv := server.NewServer()
-	conn, err := srv.Upgrade(w, r)
+	conn, err := svc.Upgrader.Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+v\n", err)
 	}
@@ -59,7 +59,7 @@ func main() {
 		panic(err)
 	}
 
-	svc := service.NewService(conf, db)
+	svc := service.NewService(conf, db, handlers.NewUpgrader())
 
 	fmt.Println("NOSTRess go!")
 	setupRoutes(svc)
