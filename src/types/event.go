@@ -4,17 +4,25 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/feanor306/nostressgo/src/utils"
 	"github.com/nbd-wtf/go-nostr"
 )
 
+// Move to models?
 type Event struct {
 	nostr.Event
 	Etags      []string
 	Ptags      []string
 	Gtags      []string
 	Dtag       string
-	Expiration int32
+	Expiration nostr.Timestamp
 	Json       string
+}
+
+func NewEvent(ne *nostr.Event) *Event {
+	return &Event{
+		Event: *ne,
+	}
 }
 
 func (e *Event) SetTags() {
@@ -49,4 +57,52 @@ func (e *Event) SetTags() {
 
 	e.Tags = tags
 	// process rest of JSON, if applicable?
+}
+
+// TODO validation for kind 0 and longform kind 30023?
+func (e *Event) Validate() error {
+	if !utils.ValidEventId(e.ID) {
+		return fmt.Errorf("invalid event id")
+	}
+
+	if !utils.ValidEventId(e.PubKey) {
+		return fmt.Errorf("invalid pubkey")
+	}
+
+	if !utils.ValidKind(e.Kind) {
+		return fmt.Errorf("invalid kind")
+	}
+
+	if !utils.ValidContent(e.Content, e.Kind) {
+		return fmt.Errorf("invalid content")
+	}
+
+	if !utils.ValidCreatedAt(int64(e.CreatedAt)) {
+		return fmt.Errorf("invalid created_at")
+	}
+
+	if !utils.ValidTags(e.Tags) {
+		return fmt.Errorf("invalid tag")
+	}
+
+	sigOk, err := e.CheckSignature()
+	if err != nil {
+		return err
+	}
+	if !sigOk {
+		return fmt.Errorf("invalid signature")
+	}
+
+	return nil
+}
+
+func (e *Event) ToEnvelopeWrapper() *EnvelopeWrapper {
+	var envelope nostr.EventEnvelope
+
+	e.SetTags()
+	envelope.Event = e.Event
+
+	return &EnvelopeWrapper{
+		Envelope: &envelope,
+	}
 }
