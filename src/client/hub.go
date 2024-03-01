@@ -1,7 +1,8 @@
-package server
+package client
 
-// Hub maintains the set of active clients and broadcasts messages to the
-// clients.
+import "fmt"
+
+// Hub maintains the set of active clients and broadcasts messages to them
 type Hub struct {
 	// Registered clients.
 	Clients map[*Client]bool
@@ -33,18 +34,18 @@ func (h *Hub) Start() {
 		case client := <-h.Unregister:
 			if _, ok := h.Clients[client]; ok {
 				delete(h.Clients, client)
-				close(client.Send)
 			}
-		case message := <-h.Broadcast:
+		case msg := <-h.Broadcast:
+			fmt.Println(msg)
 			// ONLY BROADCAST FOR CLIENTS THAT HAVE MATCHING SUBSCRIPTION ID
-			for client := range h.Clients {
-				select {
-				case client.Send <- message:
-				default:
-					close(client.Send)
-					delete(h.Clients, client)
-				}
-			}
+			// for client := range h.Clients {
+			// 	select {
+			// 	case client.Send <- message:
+			// 	default:
+			// 		close(client.Send)
+			// 		delete(h.Clients, client)
+			// 	}
+			// }
 
 			// for client, _ := range h.Clients {
 			//     if err := client.Conn.WriteJSON(message); err != nil {

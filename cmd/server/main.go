@@ -11,7 +11,7 @@ import (
 	"github.com/feanor306/nostressgo/src/service"
 )
 
-func serveWs(w http.ResponseWriter, r *http.Request, hub *server.Hub, svc *service.Service) {
+func serveWs(w http.ResponseWriter, r *http.Request, svc *service.Service) {
 	fmt.Println("WebSocket Endpoint Hit")
 
 	conn, err := svc.Upgrader.Upgrade(w, r)
@@ -19,21 +19,17 @@ func serveWs(w http.ResponseWriter, r *http.Request, hub *server.Hub, svc *servi
 		fmt.Fprintf(w, "%+v\n", err)
 	}
 
-	client := server.NewClient(conn, hub, svc)
+	client := server.NewClient(conn, svc)
 
-	hub.Register <- client
 	client.Read()
 }
 
 func setupRoutes(svc *service.Service) {
-	hub := server.NewHub()
-	go hub.Start()
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, fmt.Sprintf("NOSTRess GO started on port %d", svc.Conf.Port))
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(w, r, hub, svc)
+		serveWs(w, r, svc)
 	})
 }
 
