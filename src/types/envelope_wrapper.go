@@ -6,7 +6,7 @@ type EnvelopeWrapper struct {
 	Envelope nostr.Envelope
 }
 
-func NewEventWrapper(data []byte) *EnvelopeWrapper {
+func NewEnvelopeWrapper(data []byte) *EnvelopeWrapper {
 	return &EnvelopeWrapper{
 		Envelope: nostr.ParseMessage(data),
 	}

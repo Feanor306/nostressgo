@@ -11,12 +11,14 @@ import (
 )
 
 type Client struct {
+	PubKey        string
+	Hub           Hub
 	Conn          *websocket.Conn
 	Service       *service.Service
 	Subscriptions map[string]*nostr.ReqEnvelope
 }
 
-func NewClient(conn *websocket.Conn, svc *service.Service) *Client {
+func NewClient(conn *websocket.Conn, svc *service.Service, hub *Hub) *Client {
 	return &Client{
 		Conn:          conn,
 		Service:       svc,
@@ -42,28 +44,16 @@ func (c *Client) Read() {
 		}
 
 		chanGroup := types.NewChanGroup()
-		requestEnvelope := types.NewEventWrapper(p)
+		requestEnvelope := types.NewEnvelopeWrapper(p)
 
 		go c.HandleRequestMessage(requestEnvelope, chanGroup)
 		go func() {
 			chanGroup.WaitClose()
 		}()
 
-		// handle req.filter.limit?
 		for responseEnvelope := range chanGroup.Chan {
 			c.Respond(responseEnvelope)
 		}
-
-		// ["EVENT", <subscription_id>, <event JSON as defined above>], used to send events requested by clients.
-		// ["EOSE", <subscription_id>], used to indicate the end of stored events and the beginning of events newly received in real-time.
-		// ["CLOSED", <subscription_id>, <message>]
-
-		// log.Println(string(p))
-		// var receivedEvent nostr.Event
-
-		// CLOSE MESSAGE
-		// c.Conn.WriteJSON("")
-		// c.Conn.WriteControl(websocket.CloseMessage, FormatCloseMessage(CloseMessageTooBig, ""), time.Now().Add(writeWait))
 	}
 }
 
@@ -159,6 +149,10 @@ func (c *Client) HandleRequestMessage(ew *types.EnvelopeWrapper, chanGroup *type
 		if err := event.Validate(); err != nil {
 			chanGroup.Chan <- ew.EventResponse(err)
 			return
+		}
+
+		if len(c.PubKey) > 0 {
+			c.PubKey = event.PubKey
 		}
 
 		switch ee.Event.Kind {
