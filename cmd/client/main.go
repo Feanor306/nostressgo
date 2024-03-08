@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"net/url"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/nbd-wtf/go-nostr"
 )
 
 var addr = flag.String("addr", "localhost:3000", "http service address")
@@ -31,31 +31,53 @@ func main() {
 	defer c.Close()
 
 	done := make(chan struct{})
+	client := newClient()
 
 	go func() {
 		defer close(done)
 		for {
 			_, message, err := c.ReadMessage()
 			if err != nil {
-				log.Println("read:", err)
+				log.Fatalf("read error: %s", err)
 				return
 			}
-			log.Printf("recv: %s", message)
+			if len(message) == 0 {
+				continue
+			}
+
+			tc := client.GetTestCase(true)
+			tcb, err := tc.SerializeResponse()
+			if err != nil {
+				log.Fatalf("serialize test error: %s", err)
+				return
+			}
+
+			if bytes.Equal(tcb, message) {
+				log.Printf("PASS received: %s", message)
+			} else {
+				log.Println("FAIL")
+				log.Printf("expected: %s", tcb)
+				log.Printf("received: %s", message)
+			}
 		}
 	}()
 
 	ticker := time.NewTicker(time.Second * 5)
 	defer ticker.Stop()
 
-	client := newClient()
-	event := client.serializeEvent(client.getEvent())
-
 	for {
 		select {
 		case <-done:
 			return
 		case <-ticker.C:
-			err := c.WriteMessage(websocket.TextMessage, event)
+			tc := client.GetTestCase(false)
+			tcb, err := tc.SerializeRequest()
+			if err != nil {
+				log.Fatalf("serialize test error: %s", err)
+				return
+			}
+
+			err = c.WriteMessage(websocket.TextMessage, tcb)
 			if err != nil {
 				log.Println("write:", err)
 				return
@@ -77,41 +99,4 @@ func main() {
 			return
 		}
 	}
-}
-
-type Client struct {
-	privateKey string
-	publcKey   string
-}
-
-func newClient() *Client {
-	privateKey := nostr.GeneratePrivateKey()
-	publicKey, err := nostr.GetPublicKey(privateKey)
-	if err != nil {
-		log.Println("generate public key:", err)
-	}
-	return &Client{
-		privateKey: privateKey,
-		publcKey:   publicKey,
-	}
-}
-
-func (c *Client) getEvent() *nostr.Event {
-	return &nostr.Event{
-		PubKey:    c.publcKey,
-		CreatedAt: nostr.Now(),
-		Kind:      nostr.KindTextNote,
-		Tags:      nil,
-		Content:   "Hello Worlddasdsdf!",
-	}
-}
-
-func (c *Client) serializeEvent(e *nostr.Event) []byte {
-	e.Sign(c.privateKey)
-
-	result, err := e.MarshalJSON()
-	if err != nil {
-		log.Println("marshal event", err)
-	}
-	return result
 }
