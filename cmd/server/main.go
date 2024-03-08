@@ -21,7 +21,7 @@ func serveWs(w http.ResponseWriter, r *http.Request, svc *service.Service, hub *
 
 	cl := client.NewClient(conn, svc, hub)
 	hub.Register <- cl
-	cl.Read()
+	go cl.Read()
 }
 
 func setupRoutes(svc *service.Service) {

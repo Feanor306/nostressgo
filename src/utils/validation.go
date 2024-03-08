@@ -1,12 +1,19 @@
 package utils
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/nbd-wtf/go-nostr"
 )
+
+type Kind0Content struct {
+	Name    string `json:"name"`
+	About   string `json:"about"`
+	Picture string `json:"picture"`
+}
 
 func ValidEventId(id string) bool {
 	if len(id) != 64 {
@@ -24,20 +31,16 @@ func ValidEventId(id string) bool {
 	return true
 }
 
-func ValidKind(kind int) bool {
-	validKinds := []int{0, 1}
-
-	for _, k := range validKinds {
-		if kind == k {
-			return true
-		}
-	}
-
-	return false
-}
-
 func ValidContent(content string, kind int) bool {
-	return !(kind == 1 && len(content) == 0)
+	switch kind {
+	case 0:
+		var res Kind0Content
+		err := json.Unmarshal([]byte(content), &res)
+		return len(content) > 0 && err == nil
+	case 1:
+		return len(content) > 0
+	}
+	return true
 }
 
 func ValidCreatedAt(createdAt int64) bool {

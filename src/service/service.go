@@ -24,7 +24,6 @@ func NewService(conf *config.Config, db *database.DB, up *handlers.Upgrader) *Se
 }
 
 func (s *Service) CreateEvent(event *nostr.Event) error {
-	// TODO Move this?
 	if len(s.Conf.ExclusivePubKey) > 0 && event.PubKey != s.Conf.ExclusivePubKey {
 		return fmt.Errorf("only accepting events from exclusive key")
 	}

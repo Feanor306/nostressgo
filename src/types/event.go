@@ -56,21 +56,40 @@ func (e *Event) SetTags() {
 	}
 
 	e.Tags = tags
-	// process rest of JSON, if applicable?
 }
 
-// TODO validation for kind 0 and longform kind 30023?
 func (e *Event) Validate() error {
+	switch e.Kind {
+	case 0:
+		return e.ValidateEvent0()
+	case 1:
+		return e.ValidateEvent1()
+	case 5:
+		return e.ValidateEvent5()
+	case 30023:
+		return fmt.Errorf("unsupported event kind")
+	default:
+		return fmt.Errorf("unsupported event kind")
+	}
+}
+
+func (e *Event) ValidateEvent0() error {
+	if !utils.ValidEventId(e.PubKey) {
+		return fmt.Errorf("invalid pubkey")
+	}
+	if !utils.ValidContent(e.Content, e.Kind) {
+		return fmt.Errorf("invalid content")
+	}
+	return nil
+}
+
+func (e *Event) ValidateEvent1() error {
 	if !utils.ValidEventId(e.ID) {
 		return fmt.Errorf("invalid event id")
 	}
 
 	if !utils.ValidEventId(e.PubKey) {
 		return fmt.Errorf("invalid pubkey")
-	}
-
-	if !utils.ValidKind(e.Kind) {
-		return fmt.Errorf("invalid kind")
 	}
 
 	if !utils.ValidContent(e.Content, e.Kind) {
@@ -93,6 +112,16 @@ func (e *Event) Validate() error {
 		return fmt.Errorf("invalid signature")
 	}
 
+	return nil
+}
+
+func (e *Event) ValidateEvent5() error {
+	if !utils.ValidEventId(e.PubKey) {
+		return fmt.Errorf("invalid pubkey")
+	}
+	if !utils.ValidTags(e.Tags) {
+		return fmt.Errorf("invalid tag")
+	}
 	return nil
 }
 
