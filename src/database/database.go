@@ -128,7 +128,6 @@ func (db *DB) UpdateEventZero(id string, event *nostr.Event) error {
 }
 
 func (db *DB) GetEventsByFilter(filter *nostr.Filter, chanGroup *types.ChanGroup) error {
-	// return all events and handle them in Service/Client/Handler
 	defer chanGroup.Done()
 	query := db.sq.Select("*").From(EVENTS)
 
