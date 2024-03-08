@@ -38,10 +38,15 @@ func (c *Client) Read() {
 	}()
 
 	for {
-		_, p, err := c.Conn.ReadMessage()
+		msgType, p, err := c.Conn.ReadMessage()
 		if err != nil {
 			log.Println(err) // srv err
 			continue
+		}
+
+		if msgType == websocket.CloseMessage {
+			c.Hub.Unregister <- c
+			return
 		}
 
 		if len(p) == 0 {

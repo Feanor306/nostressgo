@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/nbd-wtf/go-nostr"
@@ -33,6 +34,8 @@ func BuildFilterQuery(filter *nostr.Filter, query squirrel.SelectBuilder) squirr
 	if !filter.Until.Time().IsZero() {
 		query = query.Where(squirrel.LtOrEq{"created_at": filter.Until.Time().Unix()})
 	}
+
+	query = query.Where(squirrel.Or{squirrel.Eq{"expiration": nil}, squirrel.Lt{"expiration": time.Now().Unix()}})
 
 	if len(filter.Tags) > 0 {
 		if etags, ok := filter.Tags["e"]; ok {
