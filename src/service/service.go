@@ -6,6 +6,7 @@ import (
 	"github.com/feanor306/nostressgo/src/config"
 	"github.com/feanor306/nostressgo/src/database"
 	"github.com/feanor306/nostressgo/src/handlers"
+	"github.com/feanor306/nostressgo/src/utils"
 	"github.com/nbd-wtf/go-nostr"
 )
 
@@ -41,4 +42,14 @@ func (s *Service) HandleZeroEvent(event *nostr.Event) error {
 	} else {
 		return s.DB.CreateEvent(event)
 	}
+}
+
+func (s *Service) HandleExpiration(event *nostr.Event) error {
+	etags := utils.GetEtags(event)
+
+	if len(etags) > 0 {
+		return s.DB.ExpireEvents(etags)
+	}
+
+	return nil
 }

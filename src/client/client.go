@@ -108,6 +108,8 @@ func (c *Client) HandleEvent(ew *types.EnvelopeWrapper, chanGroup *types.ChanGro
 		err = c.Service.HandleZeroEvent(&ee.Event)
 	case 1:
 		err = c.Service.CreateEvent(&ee.Event)
+	case 5:
+		err = c.Service.HandleExpiration(&ee.Event)
 	}
 
 	chanGroup.Chan <- ew.EventResponse(err)
@@ -123,14 +125,10 @@ func (c *Client) HandleRequestSubscription(ew *types.EnvelopeWrapper, chanGroup 
 		return
 	}
 
+	// if subscription exists, overwrite it
 	c.SubMutex.Lock()
-	defer c.SubMutex.Unlock()
-	if _, ok := c.Subscriptions[reqEnv.SubscriptionID]; ok {
-		chanGroup.Chan <- ew.ClosedResponse(reqEnv.SubscriptionID, "subscription already exists")
-		return
-	}
-
 	c.Subscriptions[reqEnv.SubscriptionID] = reqEnv
+	c.SubMutex.Unlock()
 
 	for _, filter := range reqEnv.Filters {
 		cg := types.NewChanGroup()

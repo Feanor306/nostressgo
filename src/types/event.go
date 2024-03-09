@@ -74,6 +74,9 @@ func (e *Event) Validate() error {
 }
 
 func (e *Event) ValidateEvent0() error {
+	if !utils.ValidEventId(e.ID) {
+		return fmt.Errorf("invalid id")
+	}
 	if !utils.ValidEventId(e.PubKey) {
 		return fmt.Errorf("invalid pubkey")
 	}

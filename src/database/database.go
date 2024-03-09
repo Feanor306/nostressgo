@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/feanor306/nostressgo/src/types"
@@ -107,23 +108,20 @@ func (db *DB) EventZeroExists(event *nostr.Event) (string, error) {
 }
 
 func (db *DB) UpdateEventZero(id string, event *nostr.Event) error {
-	json, err := event.MarshalJSON()
-	if err != nil {
-		return err
-	}
-
-	upd := db.sq.Update(EVENTS).
-		Set("id", event.ID)
-
-	if len(event.Content) > 0 {
-		upd = upd.Set("content", event.Content)
-	}
-
-	_, err = upd.Set("created_at", event.CreatedAt).
-		Set("raw", string(json)).
+	_, err := db.sq.Update(EVENTS).
+		Set("content", event.Content).
+		Set("created_at", event.CreatedAt).
 		Where("id", id).
 		Exec()
 
+	return err
+}
+
+func (db *DB) ExpireEvents(etags []string) error {
+	_, err := db.sq.Update(EVENTS).
+		Set("expiration", time.Now().Unix()).
+		Where(squirrel.Eq{"id": etags}).
+		Exec()
 	return err
 }
 
