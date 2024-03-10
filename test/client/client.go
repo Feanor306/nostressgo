@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"log"
@@ -14,7 +14,7 @@ type Client struct {
 	testIndex int
 }
 
-func newClient() *Client {
+func NewClient() *Client {
 	privateKey := nostr.GeneratePrivateKey()
 	publicKey, err := nostr.GetPublicKey(privateKey)
 	if err != nil {
@@ -30,7 +30,7 @@ func newClient() *Client {
 
 func (c *Client) GetTestCase(increment bool) *TestCase {
 	currentTest := &c.testCases[c.testIndex]
-	if increment {
+	if increment && c.testIndex < len(c.testCases)-1 {
 		c.testIndex += 1
 	}
 	return currentTest

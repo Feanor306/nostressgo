@@ -46,7 +46,7 @@ func ValidContent(content string, kind int) bool {
 func ValidCreatedAt(createdAt int64) bool {
 	now := time.Now()
 	ts := time.Unix(createdAt, 0)
-	return now.Before(ts) || now.Equal(ts)
+	return ts.Before(now) || now.Equal(ts)
 }
 
 func ValidTags(tags nostr.Tags) bool {

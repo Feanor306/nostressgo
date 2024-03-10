@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/feanor306/nostressgo/test/client"
 	"github.com/gorilla/websocket"
 )
 
@@ -31,7 +32,7 @@ func main() {
 	defer c.Close()
 
 	done := make(chan struct{})
-	client := newClient()
+	cl := client.NewClient()
 
 	go func() {
 		defer close(done)
@@ -45,7 +46,7 @@ func main() {
 				continue
 			}
 
-			tc := client.GetTestCase(true)
+			tc := cl.GetTestCase(true)
 			tcb, err := tc.SerializeResponse()
 			if err != nil {
 				log.Fatalf("serialize test error: %s", err)
@@ -70,7 +71,7 @@ func main() {
 		case <-done:
 			return
 		case <-ticker.C:
-			tc := client.GetTestCase(false)
+			tc := cl.GetTestCase(false)
 			tcb, err := tc.SerializeRequest()
 			if err != nil {
 				log.Fatalf("serialize test error: %s", err)
