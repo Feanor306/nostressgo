@@ -8,6 +8,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/feanor306/nostressgo/src/types"
 	"github.com/feanor306/nostressgo/src/utils"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/nbd-wtf/go-nostr"
 )
 
