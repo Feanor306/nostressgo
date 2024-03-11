@@ -1,8 +1,7 @@
 package client
 
 import (
-	"log"
-
+	"github.com/feanor306/nostressgo/src/logger"
 	"github.com/nbd-wtf/go-nostr"
 )
 
@@ -18,7 +17,7 @@ func NewClient() *Client {
 	privateKey := nostr.GeneratePrivateKey()
 	publicKey, err := nostr.GetPublicKey(privateKey)
 	if err != nil {
-		log.Println("generate public key:", err)
+		logger.New().Error().Err(err).Msg("generate public key")
 	}
 	return &Client{
 		privateKey: privateKey,

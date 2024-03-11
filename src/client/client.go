@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -40,7 +39,7 @@ func (c *Client) Read() {
 	for {
 		msgType, p, err := c.Conn.ReadMessage()
 		if err != nil {
-			log.Println(err) // srv err
+			c.Service.Log.Error().Err(err).Send()
 			continue
 		}
 
@@ -146,7 +145,7 @@ func (c *Client) HandleRequestSubscription(ew *types.EnvelopeWrapper, chanGroup 
 			if filter.Limit > 0 && count >= filter.Limit {
 				// pause sending because of limit
 				// all events matching subscription should be sent eventually
-				time.Sleep(time.Second * 10)
+				time.Sleep(time.Second * 5)
 			}
 			chanGroup.Chan <- event.EventResponse(nil)
 		}
@@ -182,21 +181,21 @@ func (c *Client) Respond(result *types.EnvelopeWrapper) {
 
 	err = c.Conn.WriteMessage(1, data)
 	if err != nil {
-		log.Println(err) // srv err
+		c.Service.Log.Error().Err(err).Send()
 	}
 }
 
 func (c *Client) SendErrorResponse(err error) {
-	log.Println(err)
+	c.Service.Log.Error().Err(err).Send()
 	ne := nostr.NoticeEnvelope(err.Error())
 
 	data, err := ne.MarshalJSON()
 	if err != nil {
-		log.Println(err)
+		c.Service.Log.Error().Err(err).Send()
 	}
 
 	err = c.Conn.WriteMessage(1, data)
 	if err != nil {
-		log.Println(err)
+		c.Service.Log.Error().Err(err).Send()
 	}
 }

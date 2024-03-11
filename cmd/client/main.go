@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"flag"
-	"log"
 	"net/url"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/feanor306/nostressgo/src/logger"
 	"github.com/feanor306/nostressgo/test/client"
 	"github.com/gorilla/websocket"
 )
@@ -17,7 +17,7 @@ var addr = flag.String("addr", "localhost:3000", "http service address")
 
 func main() {
 	flag.Parse()
-	log.SetFlags(0)
+	log := logger.New()
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -27,7 +27,7 @@ func main() {
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Fatal("dial:", err)
+		log.Error().Err(err).Msg("dial")
 	}
 	defer c.Close()
 
@@ -39,7 +39,7 @@ func main() {
 		for {
 			_, message, err := c.ReadMessage()
 			if err != nil {
-				log.Fatalf("read error: %s", err)
+				log.Error().Err(err).Msg("read error")
 				return
 			}
 			if len(message) == 0 {
@@ -49,21 +49,19 @@ func main() {
 			tc := cl.GetTestCase(true)
 			tcb, err := tc.SerializeResponse()
 			if err != nil {
-				log.Fatalf("serialize test error: %s", err)
+				log.Error().Err(err).Msg("serialize test error")
 				return
 			}
 
 			if bytes.Equal(tcb, message) {
-				log.Printf("PASS received: %s", message)
+				log.Info().Str("payload", string(message)).Msg("PASS")
 			} else {
-				log.Println("FAIL")
-				log.Printf("expected: %s", tcb)
-				log.Printf("received: %s", message)
+				log.Error().Str("expected", string(tcb)).Str("received", string(message)).Msg("FAIL")
 			}
 		}
 	}()
 
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(time.Second * 2)
 	defer ticker.Stop()
 
 	for {
@@ -74,13 +72,13 @@ func main() {
 			tc := cl.GetTestCase(false)
 			tcb, err := tc.SerializeRequest()
 			if err != nil {
-				log.Fatalf("serialize test error: %s", err)
+				log.Error().Err(err).Msg("serialize test error")
 				return
 			}
 
 			err = c.WriteMessage(websocket.TextMessage, tcb)
 			if err != nil {
-				log.Println("write:", err)
+				log.Error().Err(err).Msg("write err")
 				return
 			}
 		case <-interrupt:
@@ -90,7 +88,7 @@ func main() {
 			// waiting (with timeout) for the server to close the connection.
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
-				log.Println("write close:", err)
+				log.Error().Err(err).Msg("write close")
 				return
 			}
 			select {

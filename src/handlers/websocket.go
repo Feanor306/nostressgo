@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 
+	"github.com/feanor306/nostressgo/src/logger"
 	"github.com/gorilla/websocket"
 )
 
@@ -24,7 +24,7 @@ func NewUpgrader() *Upgrader {
 func (u *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
 	ws, err := u.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		logger.New().Error().Err(err).Send()
 		return ws, err
 	}
 	return ws, nil

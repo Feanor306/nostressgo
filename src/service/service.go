@@ -6,6 +6,7 @@ import (
 	"github.com/feanor306/nostressgo/src/config"
 	"github.com/feanor306/nostressgo/src/database"
 	"github.com/feanor306/nostressgo/src/handlers"
+	"github.com/feanor306/nostressgo/src/logger"
 	"github.com/feanor306/nostressgo/src/utils"
 	"github.com/nbd-wtf/go-nostr"
 )
@@ -13,6 +14,7 @@ import (
 type Service struct {
 	Conf     *config.Config
 	DB       *database.DB
+	Log      *logger.Log
 	Upgrader *handlers.Upgrader
 }
 
@@ -20,6 +22,7 @@ func NewService(conf *config.Config, db *database.DB, up *handlers.Upgrader) *Se
 	return &Service{
 		Conf:     conf,
 		DB:       db,
+		Log:      logger.New(),
 		Upgrader: up,
 	}
 }
