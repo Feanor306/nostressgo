@@ -31,17 +31,15 @@ func main() {
 	}
 	defer c.Close()
 
-	done := make(chan struct{})
 	cl := client.NewClient()
 
 	go func() {
-		defer close(done)
 		for {
 			_, message, err := c.ReadMessage()
 			if err != nil {
 				log.Error().Err(err).Msg("read error")
-				return
 			}
+
 			if len(message) == 0 {
 				continue
 			}
@@ -50,7 +48,6 @@ func main() {
 			tcb, err := tc.SerializeResponse()
 			if err != nil {
 				log.Error().Err(err).Msg("serialize test error")
-				return
 			}
 
 			if bytes.Equal(tcb, message) {
@@ -66,8 +63,6 @@ func main() {
 
 	for {
 		select {
-		case <-done:
-			return
 		case <-ticker.C:
 			tc := cl.GetTestCase(false)
 			tcb, err := tc.SerializeRequest()
@@ -90,10 +85,6 @@ func main() {
 			if err != nil {
 				log.Error().Err(err).Msg("write close")
 				return
-			}
-			select {
-			case <-done:
-			case <-time.After(time.Second):
 			}
 			return
 		}

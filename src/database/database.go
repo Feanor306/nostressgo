@@ -101,9 +101,13 @@ func (db *DB) EventZeroExists(event *nostr.Event) (string, error) {
 	var id string
 	err := db.sq.Select("id").
 		From(EVENTS).
-		Where("pubkey", event.PubKey).
-		Where("kind", "0").
+		Where(squirrel.Eq{"pubkey": event.PubKey}).
+		Where(squirrel.Eq{"kind": 0}).
 		QueryRow().Scan(&id)
+
+	if err == sql.ErrNoRows {
+		return id, nil
+	}
 
 	return id, err
 }
@@ -112,7 +116,7 @@ func (db *DB) UpdateEventZero(id string, event *nostr.Event) error {
 	_, err := db.sq.Update(EVENTS).
 		Set("content", event.Content).
 		Set("created_at", event.CreatedAt).
-		Where("id", id).
+		Where(squirrel.Eq{"id": id}).
 		Exec()
 
 	return err

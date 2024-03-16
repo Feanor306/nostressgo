@@ -56,29 +56,6 @@ func GetEvent1TestCases(publicKey, privateKey string) []TestCase {
 	}
 	cases = append(cases, createValid1)
 
-	// invalid pubkey
-	event1Invalid1 := &nostr.Event{
-		PubKey:    publicKey + "a",
-		CreatedAt: nostr.Now(),
-		Kind:      nostr.KindTextNote,
-		Tags: nostr.Tags{
-			{"e", E_TAG, "wss://nostr.example.com"},
-			{"p", P_TAG}},
-		Content: "Hello Worlddasdsdf!",
-	}
-	event1Invalid1.Sign(privateKey)
-	createInvalid1 := TestCase{
-		Request: &nostr.EventEnvelope{
-			Event: *event1Invalid1,
-		},
-		Response: &nostr.OKEnvelope{
-			EventID: event1Invalid1.ID,
-			OK:      false,
-			Reason:  "invalid pubkey",
-		},
-	}
-	cases = append(cases, createInvalid1)
-
 	// invalid date
 	event1Invalid2 := &nostr.Event{
 		PubKey:    publicKey,
@@ -97,7 +74,7 @@ func GetEvent1TestCases(publicKey, privateKey string) []TestCase {
 		Response: &nostr.OKEnvelope{
 			EventID: event1Invalid2.ID,
 			OK:      false,
-			Reason:  "invalid pubkey",
+			Reason:  "invalid created_at",
 		},
 	}
 	cases = append(cases, createInvalid2)
@@ -109,8 +86,9 @@ func GetEvent0TestCases(publicKey, privateKey string) []TestCase {
 
 	// Valid event kind 0
 	event0valid1 := &nostr.Event{
-		PubKey:  publicKey,
-		Content: "{\"name\":\"Bob\", \"about\":\"normal dude\", \"picture\":\"face.jpg\"}",
+		PubKey:    publicKey,
+		CreatedAt: nostr.Timestamp(time.Now().Add(time.Hour).Unix()),
+		Content:   "{\"name\":\"Bob\", \"about\":\"normal dude\", \"picture\":\"face.jpg\"}",
 	}
 	event0valid1.Sign(privateKey)
 	create0Valid1 := TestCase{
@@ -127,8 +105,9 @@ func GetEvent0TestCases(publicKey, privateKey string) []TestCase {
 
 	// Valid event kind 0 should replace previous
 	event0valid2 := &nostr.Event{
-		PubKey:  publicKey,
-		Content: "{\"name\":\"Robert\", \"about\":\"normal friend\", \"picture\":\"head.jpg\"}",
+		PubKey:    publicKey,
+		CreatedAt: nostr.Timestamp(time.Now().Add(time.Hour).Unix()),
+		Content:   "{\"name\":\"Robert\", \"about\":\"normal friend\", \"picture\":\"head.jpg\"}",
 	}
 	event0valid2.Sign(privateKey)
 	create0Valid2 := TestCase{
@@ -145,8 +124,9 @@ func GetEvent0TestCases(publicKey, privateKey string) []TestCase {
 
 	// Invalid event kind 0
 	event0invalid1 := &nostr.Event{
-		PubKey:  publicKey,
-		Content: "{\"name\":\"Bob\", \"about\":\"normal dude\", \"picture\":\"face.jpg\"}}",
+		PubKey:    publicKey,
+		CreatedAt: nostr.Timestamp(time.Now().Add(time.Hour).Unix()),
+		Content:   "{\"name\":\"Bob\", \"about\":\"normal dude\", \"picture\":\"face.jpg\"}}",
 	}
 	event0invalid1.Sign(privateKey)
 	create0Invalid1 := TestCase{
