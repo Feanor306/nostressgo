@@ -12,8 +12,6 @@ import (
 )
 
 func serveWs(w http.ResponseWriter, r *http.Request, svc *service.Service, hub *client.Hub) {
-	fmt.Println("WebSocket Endpoint Hit")
-
 	conn, err := svc.Upgrader.Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+v\n", err)

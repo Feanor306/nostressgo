@@ -13,7 +13,7 @@ import (
 
 type Client struct {
 	PubKey  string
-	Hub     Hub
+	Hub     *Hub
 	Conn    *websocket.Conn
 	Service *service.Service
 
@@ -25,6 +25,7 @@ func NewClient(conn *websocket.Conn, svc *service.Service, hub *Hub) *Client {
 	return &Client{
 		Conn:          conn,
 		Service:       svc,
+		Hub:           hub,
 		Subscriptions: make(map[string]*nostr.ReqEnvelope),
 	}
 }
@@ -60,7 +61,11 @@ func (c *Client) Read() {
 			chanGroup.WaitClose()
 		}()
 
-		for responseEnvelope := range chanGroup.Chan {
+		for {
+			responseEnvelope, ok := <-chanGroup.Chan
+			if !ok {
+				break
+			}
 			c.Respond(responseEnvelope)
 		}
 	}
