@@ -33,6 +33,7 @@ func main() {
 
 	cl := client.NewClient()
 
+	// reading loop
 	go func() {
 		for {
 			_, message, err := c.ReadMessage()
@@ -44,16 +45,51 @@ func main() {
 				continue
 			}
 
-			tc := cl.GetTestCase(true)
-			tcb, err := tc.SerializeResponse()
-			if err != nil {
-				log.Error().Err(err).Msg("serialize test error")
-			}
+			tc := cl.GetTestCase()
 
-			if bytes.Equal(tcb, message) {
-				log.Info().Str("payload", string(message)).Msg("PASS")
+			if len(tc.SubId) == 0 {
+				tcb, err := tc.SerializeResponse()
+				if err != nil {
+					log.Error().Err(err).Msg("serialize test error")
+				}
+				if bytes.Equal(tcb, message) {
+					log.Info().Str("payload", string(message)).Msg("PASS")
+				} else {
+					log.Error().Str("expected", string(tcb)).Str("received", string(message)).Msg("FAIL")
+				}
+				err = cl.IncrementTestIdx()
+				if err != nil {
+					log.Info().Msg("Tests done!")
+					break
+				}
 			} else {
-				log.Error().Str("expected", string(tcb)).Str("received", string(message)).Msg("FAIL")
+				if tc.Done {
+					tce, err := tc.GetEoseResponse()
+					if err != nil {
+						log.Error().Err(err).Msg("serialize test error")
+					}
+					if bytes.Equal(tce, message) {
+						log.Info().Str("payload", string(message)).Msg("PASS")
+					} else {
+						log.Error().Str("expected", string(tce)).Str("received", string(message)).Msg("FAIL")
+					}
+					err = cl.IncrementTestIdx()
+					if err != nil {
+						log.Info().Msg("Tests done!")
+						break
+					}
+				} else {
+					tce, err := tc.GetEventResponse()
+					if err != nil {
+						log.Error().Err(err).Msg("serialize test error")
+					}
+					if bytes.Equal(tce, message) {
+						log.Info().Str("payload", string(message)).Msg("PASS")
+					} else {
+						log.Error().Str("expected", string(tce)).Str("received", string(message)).Msg("FAIL")
+					}
+					tc.Done = true
+				}
 			}
 		}
 	}()
@@ -64,7 +100,7 @@ func main() {
 	for {
 		select {
 		case <-ticker.C:
-			tc := cl.GetTestCase(false)
+			tc := cl.GetTestCase()
 			tcb, err := tc.SerializeRequest()
 			if err != nil {
 				log.Error().Err(err).Msg("serialize test error")
