@@ -81,9 +81,9 @@ func (ew *EnvelopeWrapper) ClosedResponse(id string, reason string) *EnvelopeWra
 	}
 }
 
-func (ew *EnvelopeWrapper) EoseResponse() *EnvelopeWrapper {
-	var reason nostr.EOSEEnvelope = "end of stored events"
+func (ew *EnvelopeWrapper) EoseResponse(subscriptionId string) *EnvelopeWrapper {
+	var eose nostr.EOSEEnvelope = nostr.EOSEEnvelope(subscriptionId)
 	return &EnvelopeWrapper{
-		Envelope: &reason,
+		Envelope: &eose,
 	}
 }

@@ -27,11 +27,11 @@ func BuildFilterQuery(filter *nostr.Filter, query squirrel.SelectBuilder) squirr
 		query = query.Where("content LIKE ?", fmt.Sprint("%", filter.Search, "%"))
 	}
 
-	if !filter.Since.Time().IsZero() {
+	if filter.Since != nil && !filter.Since.Time().IsZero() {
 		query = query.Where(squirrel.GtOrEq{"created_at": filter.Since.Time().Unix()})
 	}
 
-	if !filter.Until.Time().IsZero() {
+	if filter.Until != nil && !filter.Until.Time().IsZero() {
 		query = query.Where(squirrel.LtOrEq{"created_at": filter.Until.Time().Unix()})
 	}
 
@@ -69,7 +69,7 @@ func BuildFilterQuery(filter *nostr.Filter, query squirrel.SelectBuilder) squirr
 				queryGtags = append(queryGtags, fmt.Sprint("'", v, ","))
 			}
 
-			query = query.Where(fmt.Sprint("ptags && ARRAY[", strings.Join(queryGtags, ","), "]"))
+			query = query.Where(fmt.Sprint("gtags && ARRAY[", strings.Join(queryGtags, ","), "]"))
 		}
 	}
 	return query

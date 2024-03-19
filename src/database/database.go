@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -102,7 +103,7 @@ func (db *DB) EventZeroExists(event *nostr.Event) (string, error) {
 	err := db.sq.Select("id").
 		From(EVENTS).
 		Where(squirrel.Eq{"pubkey": event.PubKey}).
-		Where(squirrel.Eq{"kind": 0}).
+		Where(squirrel.Eq{"kind": nostr.KindProfileMetadata}).
 		QueryRow().Scan(&id)
 
 	if err == sql.ErrNoRows {
@@ -132,7 +133,9 @@ func (db *DB) ExpireEvents(etags []string) error {
 
 func (db *DB) GetEventsByFilter(filter *nostr.Filter, chanGroup *types.ChanGroup) error {
 	defer chanGroup.Done()
-	query := db.sq.Select("*").From(EVENTS)
+	query := db.sq.
+		Select("id", "pubkey", "content", "created_at", "kind", "array_to_json(etags)", "array_to_json(ptags)", "array_to_json(gtags)", "dtag", "expiration", "raw").
+		From(EVENTS)
 
 	query = BuildFilterQuery(filter, query)
 
@@ -143,10 +146,21 @@ func (db *DB) GetEventsByFilter(filter *nostr.Filter, chanGroup *types.ChanGroup
 	defer rows.Close()
 
 	for rows.Next() {
-		var event *types.Event
+		var event types.Event
+		var etags, ptags, gtags string
 
 		if err := rows.Scan(&event.ID, &event.PubKey, &event.Content, &event.CreatedAt,
-			&event.Kind, &event.Etags, &event.Ptags, &event.Gtags, &event.Dtag, &event.Expiration, &event.Json); err != nil {
+			&event.Kind, &etags, &ptags, &gtags, &event.Dtag, &event.Expiration, &event.Json); err != nil {
+			return err
+		}
+
+		if err := json.Unmarshal([]byte(etags), &event.Etags); err != nil {
+			return err
+		}
+		if err := json.Unmarshal([]byte(ptags), &event.Ptags); err != nil {
+			return err
+		}
+		if err := json.Unmarshal([]byte(gtags), &event.Gtags); err != nil {
 			return err
 		}
 

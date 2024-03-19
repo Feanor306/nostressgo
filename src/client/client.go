@@ -121,7 +121,6 @@ func (c *Client) HandleEvent(ew *types.EnvelopeWrapper, chanGroup *types.ChanGro
 }
 
 func (c *Client) HandleRequestSubscription(ew *types.EnvelopeWrapper, chanGroup *types.ChanGroup) {
-	defer chanGroup.Done()
 	reqEnv, ok := ew.Envelope.(*nostr.ReqEnvelope)
 
 	if !ok {
@@ -139,22 +138,28 @@ func (c *Client) HandleRequestSubscription(ew *types.EnvelopeWrapper, chanGroup 
 		go func() {
 			cg.WaitClose()
 		}()
+
+		// intermediary chan cg reading goroutine
+		// must be looping before we send its ref further
+		go func() {
+			defer chanGroup.Done()
+			count := 0
+			for event := range cg.Chan {
+				count++
+				if filter.Limit > 0 && count >= filter.Limit {
+					// pause sending because of limit
+					// all events matching subscription should be sent eventually
+					time.Sleep(time.Second * 5)
+				}
+				chanGroup.Chan <- event
+			}
+			chanGroup.Chan <- ew.EoseResponse(reqEnv.SubscriptionID)
+		}()
+
 		if err := c.Service.DB.GetEventsByFilter(&filter, cg); err != nil {
 			chanGroup.Chan <- ew.ClosedResponse(reqEnv.SubscriptionID, err.Error())
 			return
 		}
-
-		count := 0
-		for event := range cg.Chan {
-			count++
-			if filter.Limit > 0 && count >= filter.Limit {
-				// pause sending because of limit
-				// all events matching subscription should be sent eventually
-				time.Sleep(time.Second * 5)
-			}
-			chanGroup.Chan <- event.EventResponse(nil)
-		}
-		chanGroup.Chan <- ew.EoseResponse()
 	}
 }
 

@@ -35,7 +35,7 @@ func (e *Event) SetTags() {
 	}
 	if len(e.Ptags) > 0 {
 		for _, ptag := range e.Ptags {
-			tags = tags.AppendUnique(nostr.Tag{"e", ptag})
+			tags = tags.AppendUnique(nostr.Tag{"p", ptag})
 		}
 	}
 	if len(e.Gtags) > 0 {
