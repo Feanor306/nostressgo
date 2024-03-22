@@ -30,6 +30,11 @@ func setupRoutes(svc *service.Service) {
 		fmt.Fprintf(w, fmt.Sprintf("NOSTRess GO started on port %d", svc.Conf.Port))
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		accept := r.Header.Get("Accept")
+		if accept == "application/nostr+json" {
+			handlers.Nip11response(w)
+			return
+		}
 		serveWs(w, r, svc, hub)
 	})
 }
