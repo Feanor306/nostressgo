@@ -42,6 +42,7 @@ func (db *DB) InitDatabase() error {
 			id text NOT NULL,
 			pubkey text NOT NULL,
 			content text NOT NULL,
+			subject text,
 			created_at integer NOT NULL,
 			kind integer NOT NULL,
 			etags text[],
@@ -72,7 +73,8 @@ func (db *DB) CreateEvent(event *nostr.Event) error {
 	etags := utils.GetEtags(event)
 	ptags := utils.GetPtags(event)
 	gtags := utils.GetGtags(event)
-	dtag := event.Tags.GetD()
+	dtag := utils.GetDtag(event)
+	subject := utils.GetSubject(event)
 
 	expiration, err := utils.GetExpiration(event)
 	if err != nil {
@@ -86,8 +88,8 @@ func (db *DB) CreateEvent(event *nostr.Event) error {
 
 	var id string
 	err = db.sq.Insert(EVENTS).
-		Columns("id", "pubkey", "content", "created_at", "kind", "etags", "ptags", "gtags", "dtag", "expiration", "raw").
-		Values(event.ID, event.PubKey, event.Content, event.CreatedAt.Time().Unix(), event.Kind, etags, ptags, gtags, dtag, expiration, string(json)).
+		Columns("id", "pubkey", "content", "subject", "created_at", "kind", "etags", "ptags", "gtags", "dtag", "expiration", "raw").
+		Values(event.ID, event.PubKey, event.Content, subject, event.CreatedAt.Time().Unix(), event.Kind, etags, ptags, gtags, dtag, expiration, string(json)).
 		Suffix("RETURNING \"id\"").
 		QueryRow().Scan(&id)
 
@@ -134,7 +136,7 @@ func (db *DB) ExpireEvents(etags []string) error {
 func (db *DB) GetEventsByFilter(filter *nostr.Filter, chanGroup *types.ChanGroup) error {
 	defer chanGroup.Done()
 	query := db.sq.
-		Select("id", "pubkey", "content", "created_at", "kind", "array_to_json(etags)", "array_to_json(ptags)", "array_to_json(gtags)", "dtag", "expiration", "raw").
+		Select("id", "pubkey", "content", "subject", "created_at", "kind", "array_to_json(etags)", "array_to_json(ptags)", "array_to_json(gtags)", "dtag", "expiration", "raw").
 		From(EVENTS)
 
 	query = BuildFilterQuery(filter, query)
@@ -149,7 +151,7 @@ func (db *DB) GetEventsByFilter(filter *nostr.Filter, chanGroup *types.ChanGroup
 		var event types.Event
 		var etags, ptags, gtags string
 
-		if err := rows.Scan(&event.ID, &event.PubKey, &event.Content, &event.CreatedAt,
+		if err := rows.Scan(&event.ID, &event.PubKey, &event.Content, &event.Subject, &event.CreatedAt,
 			&event.Kind, &etags, &ptags, &gtags, &event.Dtag, &event.Expiration, &event.Json); err != nil {
 			return err
 		}

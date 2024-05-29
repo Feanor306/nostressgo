@@ -45,6 +45,27 @@ func GetExpiration(event *nostr.Event) (int64, error) {
 	return tm.Unix(), nil
 }
 
+func GetDtag(event *nostr.Event) *string {
+	dtag := event.Tags.GetD()
+
+	if len(dtag) > 0 {
+		return &dtag
+	}
+
+	return nil
+}
+
+func GetSubject(event *nostr.Event) *string {
+	subject := event.Tags.GetFirst([]string{"subject"})
+
+	if subject != nil {
+		val := subject.Value()
+		return &val
+	}
+
+	return nil
+}
+
 func GetTagValues(tags nostr.Tags) []string {
 	result := make([]string, 0, len(tags))
 

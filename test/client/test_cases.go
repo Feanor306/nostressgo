@@ -56,7 +56,9 @@ func GetEvent1TestCases(publicKey, privateKey string) []TestCase {
 		Kind:      nostr.KindTextNote,
 		Tags: nostr.Tags{
 			{"e", E_TAG, "wss://nostr.example.com"},
-			{"p", P_TAG}},
+			{"p", P_TAG},
+			{"subject", "The subject is subjective"},
+		},
 		Content: "Hello Worlddasdsdf!",
 	}
 	event1.Sign(privateKey)

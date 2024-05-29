@@ -8,13 +8,13 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 )
 
-// Move to models?
 type Event struct {
 	nostr.Event
 	Etags      []string
 	Ptags      []string
 	Gtags      []string
 	Dtag       string
+	Subject    string
 	Expiration nostr.Timestamp
 	Json       string
 }
@@ -26,7 +26,7 @@ func NewEvent(ne *nostr.Event) *Event {
 }
 
 func (e *Event) SetTags() {
-	tags := make(nostr.Tags, 0, len(e.Etags)+len(e.Ptags)+len(e.Gtags)+2)
+	tags := make(nostr.Tags, 0, len(e.Etags)+len(e.Ptags)+len(e.Gtags)+3)
 
 	if len(e.Etags) > 0 {
 		for _, etag := range e.Etags {
@@ -51,6 +51,10 @@ func (e *Event) SetTags() {
 		tags = tags.AppendUnique(nostr.Tag{"d", e.Dtag})
 	}
 
+	if len(e.Subject) > 0 {
+		tags = tags.AppendUnique(nostr.Tag{"subject", e.Subject})
+	}
+
 	if e.Expiration > 0 {
 		tags = tags.AppendUnique(nostr.Tag{"expiration", fmt.Sprint(e.Expiration)})
 	}
@@ -66,8 +70,6 @@ func (e *Event) Validate() error {
 		return e.ValidateEvent1()
 	case 5:
 		return e.ValidateEvent5()
-	case 30023:
-		return fmt.Errorf("unsupported event kind")
 	default:
 		return fmt.Errorf("unsupported event kind")
 	}
