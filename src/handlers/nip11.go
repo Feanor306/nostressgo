@@ -22,7 +22,7 @@ func getResponseObj() ([]byte, error) {
 	no := Nip11obj{
 		Name:          "NOSTRessGO",
 		Description:   "NOSTR relay written in golang.",
-		SupportedNips: []string{"1", "9", "11", "12", "16", "20", "33", "40"},
+		SupportedNips: []string{"1", "9", "11", "12", "14", "16", "20", "33", "40", "50"},
 		Software:      "https://github.com/Feanor306/nostressgo",
 		Version:       "1.0.0",
 	}
